@@ -1,0 +1,11 @@
+import 'dotenv/config';
+import express from 'express';
+import inquiries from '../api/inquiries.js';
+import orders from '../api/orders.js';
+const app = express();
+app.disable('x-powered-by');
+app.use(express.json({ limit: '20kb' }));
+app.all('/api/inquiries', inquiries);
+app.all('/api/orders', orders);
+app.use((error, req, res, next) => res.status(error.status || 500).json({ error: error.type === 'entity.too.large' ? 'Payload too large' : 'Invalid request' }));
+app.listen(process.env.PORT || 3001, '127.0.0.1', () => console.log('Williams API ready on http://127.0.0.1:' + (process.env.PORT || 3001)));
