@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, createContext, useContext } from 'react';
+import { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowUpRight, ArrowRight, Check, ChevronDown, ChevronRight, ShoppingBag, Menu, X, ShieldCheck, Sparkles, Building2, BedDouble, HeartPulse, Landmark, Users, Home as HomeIcon, Truck, Clock3, Plus, Minus, Trash2, Search, CheckCircle2, LoaderCircle, Globe2 } from 'lucide-react';
 import { content, navPaths } from './content';
-import { products } from '../shared/catalog';
+import AdminPanel from './AdminPanel';
+import HomeModern from './HomeModern';
+import { modernContent } from './modern-content';
 
 const Context = createContext();
 const useSite = () => useContext(Context);
@@ -21,20 +23,34 @@ export default function App() {
   const navigate = useNavigate();
   const pathLang = location.pathname.split('/')[1];
   const lang = ['de', 'en', 'fr'].includes(pathLang) ? pathLang : 'de';
+  const isAdmin = pathLang === 'admin' || location.pathname.split('/')[2] === 'admin';
+  const [products, setProducts] = useState([]);
+  const [catalogSource, setCatalogSource] = useState('loading');
+  const refreshCatalog = useCallback(async () => {
+    try {
+      const response = await fetch('/api/products', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Catalog unavailable');
+      const data = await response.json();
+      setProducts(data.products); setCatalogSource(data.source);
+      setCart(old => old.filter(item => data.products.some(p => p.id === item.id)));
+    } catch { setCatalogSource('error'); }
+  }, []);
+  useEffect(() => { refreshCatalog(); }, [refreshCatalog]);
   const [cart, setCart] = useState(() => {
     const saved = readStored('williams-cart', []);
-    return Array.isArray(saved) ? saved.filter(i => products.some(p => p.id === i.id) && Number.isInteger(i.qty) && i.qty > 0 && i.qty <= 99) : [];
+    return Array.isArray(saved) ? saved.filter(i => i && typeof i.id === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(i.id) && Number.isInteger(i.qty) && i.qty > 0 && i.qty <= 99) : [];
   });
   const [cartOpen, setCartOpen] = useState(false);
   const [notice, setNotice] = useState(false);
-  const t = content[lang];
+  const c = modernContent[lang];
+  const t = { ...content[lang], ...(catalogSource === 'live' ? { shopText: c.shopLive, demo: c.liveDisclaimer, vat: c.liveVat } : {}) };
   const count = cart.reduce((sum, i) => sum + i.qty, 0);
-  const total = cart.reduce((sum, i) => sum + products.find(p => p.id === i.id).price * i.qty, 0);
+  const total = cart.reduce((sum, i) => sum + (products.find(p => p.id === i.id)?.price || 0) * i.qty, 0);
   const add = (id) => setCart(old => old.some(i => i.id === id) ? old.map(i => i.id === id ? { ...i, qty: Math.min(i.qty + 1, 99) } : i) : [...old, { id, qty: 1 }]);
   const quantity = (id, qty) => setCart(old => qty <= 0 ? old.filter(i => i.id !== id) : old.map(i => i.id === id ? { ...i, qty: Math.min(qty, 99) } : i));
   useEffect(() => { try { localStorage.setItem('williams-cart', JSON.stringify(cart)); } catch {} }, [cart]);
   useEffect(() => {
-    if (!['de', 'en', 'fr'].includes(pathLang)) {
+    if (!['de', 'en', 'fr'].includes(pathLang) && pathLang !== 'admin') {
       const saved = readStored('williams-language', 'de');
       navigate(`/${['de', 'en', 'fr'].includes(saved) ? saved : 'de'}${location.pathname === '/' ? '' : location.pathname}${location.search}`, { replace: true });
     }
@@ -53,11 +69,16 @@ export default function App() {
     ['de', 'en', 'fr'].forEach(l => { const el = document.createElement('link'); el.rel = 'alternate'; el.hreflang = l; el.href = `${import.meta.env.VITE_SITE_URL || window.location.origin}/${l}${page ? '/' + page : ''}`; document.head.append(el); });
     window.scrollTo({ top: 0, behavior: 'instant' });
     setCartOpen(false);
-  }, [location.pathname, lang]);
-  return <Context.Provider value={{ lang, t, cart, add, quantity, count, total, setCart, cartOpen, setCartOpen }}>
+    let robots = document.querySelector('meta[name="robots"]');
+    if (isAdmin) { if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.append(robots); } robots.content = 'noindex, nofollow'; }
+    else if (robots) robots.remove();
+  }, [location.pathname, lang, isAdmin]);
+  return <Context.Provider value={{ lang, t, cart, add, quantity, count, total, setCart, cartOpen, setCartOpen, products, catalogSource, refreshCatalog }}>
     <a className="skip-link" href="#main">{lang === 'de' ? 'Zum Inhalt' : lang === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
-    <Header />
+    {!isAdmin && <Header />}
     <main id="main"><Routes>
+      <Route path="/admin" element={<AdminPanel lang={lang} onCatalogChange={refreshCatalog}/>} />
+      <Route path="/:lang/admin" element={<AdminPanel lang={lang} onCatalogChange={refreshCatalog}/>} />
       <Route path="/:lang" element={<HomePage />} />
       <Route path="/:lang/about" element={<AboutPage />} />
       <Route path="/:lang/cleaning" element={<ServicePage kind="cleaning" />} />
@@ -71,8 +92,8 @@ export default function App() {
       <Route path="/" element={<div className="loading"><LoaderCircle /></div>} />
       <Route path="*" element={<div className="container not-found"><span>404</span><h1>{t.notFound}</h1><Button to="">{t.back}</Button></div>} />
     </Routes></main>
-    <Footer onStorage={() => setNotice(true)} />
-    <a className="whatsapp-float" href={`https://wa.me/${waNumber}`} target="_blank" rel="noreferrer" aria-label={t.whatsapp} title={t.whatsapp}><WhatsAppIcon size={28}/></a>
+    {!isAdmin && <Footer onStorage={() => setNotice(true)} />}
+    {!isAdmin && <a className="whatsapp-float" href={`https://wa.me/${waNumber}`} target="_blank" rel="noreferrer" aria-label={t.whatsapp} title={t.whatsapp}><WhatsAppIcon size={28}/></a>}
     {cartOpen && <CartDrawer />}
     {notice && <div className="storage-notice" role="status"><p>{t.cookies}</p><button className="button" onClick={() => setNotice(false)}>{t.cookieButton}<Check size={16}/></button></div>}
   </Context.Provider>;
@@ -100,20 +121,14 @@ function LanguageSelect() {
 }
 
 function HomePage() {
-  const { t } = useSite();
-  const icons = [ShieldCheck, Sparkles, Users];
-  const industryIcons = [Building2, BedDouble, HeartPulse, Landmark, Users, HomeIcon];
-  return <>
-    <section className="hero"><div className="hero-bg"/><div className="container hero-inner"><div className="hero-copy"><Eyebrow>{t.eyebrow}</Eyebrow><h1>{t.hero1}<br/><span>{t.hero2}</span></h1><p>{t.heroText}</p><div className="hero-buttons"><Button light>{t.quote}</Button><LocalLink to="cleaning" className="text-link">{t.discover}<ArrowRight size={18}/></LocalLink></div><div className="hero-note"><span className="mini-check"><Check size={12}/></span>{t.heroNote}</div></div><div className="hero-image-caption"><span className="caption-star"><Sparkles size={22}/></span><div><strong>{t.imageLabel}</strong><span>{t.imageSub}</span></div><span className="caption-line"/></div><div className="hero-index"><span>01</span><i/>03</div></div></section>
-    <div className="promise-strip"><div className="container">{t.pillars.map((p, i) => { const Icon = icons[i]; return <div key={p}><Icon size={20}/><span>{p}</span></div>; })}<span className="promise-slogan">{t.slogan}</span></div></div>
-    <section className="section services-section"><div className="container"><div className="section-heading"><div><Eyebrow>{t.servicesEyebrow}</Eyebrow><h2>{t.servicesTitle}</h2></div><p>{t.servicesText}</p></div><ServiceCards /></div></section>
-    <section className="industries-section"><div className="container"><div className="industries-heading"><Eyebrow>{t.industriesLabel}</Eyebrow><h2>{t.industriesTitle}</h2></div><div className="industry-list">{t.industries.map((item, i) => { const Icon = industryIcons[i]; return <LocalLink key={item} to={`contact?industry=${i}`}><Icon size={26} strokeWidth={1.3}/><span>{item}</span></LocalLink>; })}</div></div></section>
-    <section className="section about-section"><div className="container about-grid"><div className="about-photo"><img src="/images/cleaning.svg" alt={t.cards[0][0]} loading="lazy"/><div className="about-stamp"><Sparkles size={27}/><strong>WILLIAMS</strong><span>{t.slogan}</span></div></div><div className="about-copy"><Eyebrow>{t.aboutLabel}</Eyebrow><h2>{t.aboutTitle}</h2><p>{t.aboutText}</p><div className="value-list">{t.values.map(([title, text]) => <div key={title}><span><Check size={16}/></span><div><h3>{title}</h3><p>{text}</p></div></div>)}</div><Button to="about">{t.aboutCta}</Button></div></div></section>
-    <Process /><CallToAction />
-  </>;
+  const { t, lang } = useSite();
+  return <HomeModern {...{ t, lang, LocalLink, Button, Eyebrow, ServiceCards, Process, CallToAction }}/>;
 }
 function HygieneScene() { return <div className="hygiene-scene" aria-hidden="true"><div className="scene-circle"/><div className="scene-products"><div className="scene-product one"><ProductArt type="bottle" color="#c6cbbd"/></div><div className="scene-product two"><ProductArt type="rolls"/></div><div className="scene-product three"><ProductArt type="dispenser"/></div><div className="scene-product four"><ProductArt type="spray" color="#b6c79c"/></div></div><span className="scene-word">ESSENTIALS, ELEVATED.</span></div>; }
-function ServiceCards() { const { t } = useSite(); return <div className="service-cards">{t.cards.map(([title, subtitle, description], i) => <LocalLink to={['cleaning', 'laundry', 'shop'][i]} key={title} className="service-card"><div className="service-card-image">{i < 2 ? <img src={`/images/${i === 0 ? 'cleaning' : 'laundry'}.svg`} alt={title} loading="lazy"/> : <HygieneScene />}<span className="service-number">0{i + 1}</span><span className="service-card-arrow"><ArrowUpRight size={22}/></span></div><div className="service-card-copy"><h3>{title}</h3><h4>{subtitle}</h4><p>{description}</p><span className="card-link">{t.more}<ArrowRight size={17}/></span></div></LocalLink>)}</div>; }
+function ServiceCards() {
+  const { t }=useSite();
+  return <div className="service-cards">{t.cards.map(([title,subtitle,description],i)=><LocalLink to={['cleaning','laundry','shop'][i]} key={title} className="service-card"><div className="service-card-image"><img src={['/images/crew.svg','/images/linen.svg','/images/products.svg'][i]} alt={title} loading="lazy"/><span className="service-number">0{i+1}</span><span className="service-card-arrow"><ArrowUpRight size={25}/></span><div className="service-photo-title"><small>WILLIAMS / 0{i+1}</small><h3>{title}</h3></div></div><div className="service-card-copy"><h4>{subtitle}</h4><p>{description}</p><span className="card-link">{t.more}<ArrowRight size={17}/></span></div></LocalLink>)}</div>;
+}
 function Process() { const { t } = useSite(); return <section className="section process-section"><div className="container"><Eyebrow>{t.processLabel}</Eyebrow><h2>{t.processTitle}</h2><div className="process-grid">{t.process.map(([title, text], i) => <div key={title}><div className="process-number">0{i + 1}<span/></div><h3>{title}</h3><p>{text}</p></div>)}</div></div></section>; }
 function CallToAction() { const { t } = useSite(); return <section className="cta-section"><div className="container"><div><Eyebrow>LET’S MAKE IT WILLIAMS.</Eyebrow><h2>{t.ctaTitle}</h2><p>{t.ctaText}</p></div><Button light>{t.quote}</Button></div><span className="cta-decoration">W</span></section>; }
 function PageIntro({ label, title, text, image, children }) { const { t } = useSite(); return <section className={`page-intro ${image ? 'with-image' : ''}`}><div className="container"><div className="page-intro-copy"><div className="breadcrumbs"><LocalLink>{t.nav[0]}</LocalLink><ChevronRight size={12}/><span>{label}</span></div><Eyebrow>{label}</Eyebrow><h1>{title}</h1>{text && <p>{text}</p>}{children}</div>{image && <img src={image} alt={title} className="intro-image"/>}</div></section>; }
@@ -132,7 +147,7 @@ function ContactPage() {
   return <><PageIntro label={t.contactLabel} title={t.contactTitle} text={t.contactText}/><section className="section contact-section"><div className="container contact-grid"><aside><h2>{t.footerContact}</h2><p>{t.slogan}</p><a className="contact-method" href={`https://wa.me/${waNumber}`} target="_blank" rel="noreferrer"><WhatsAppIcon size={25}/><div><strong>WhatsApp</strong><span>+{waNumber} {waIsDemo && <small>({lang === 'de' ? 'Demo' : lang === 'fr' ? 'exemple' : 'demo'})</small>}</span></div><ArrowUpRight size={20}/></a><div className="contact-method"><Globe2 size={24}/><div><strong>Deutsch · English · Français</strong><span>{t.form.reference}</span></div></div>{waIsDemo && <div className="contact-note"><ShieldCheck size={22}/><p>{t.demoContact}</p></div>}</aside><InquiryForm/></div></section><FAQ/></>;
 }
 function InquiryForm({ order = false }) {
-  const { t, lang, cart, setCart } = useSite();
+  const { t, lang, cart, setCart, catalogSource } = useSite();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const initialService = params.get('service') || '';
@@ -164,10 +179,15 @@ function InquiryForm({ order = false }) {
     <div className="honeypot" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div>
     <label className="consent"><input type="checkbox" name="consent" required/><span>{t.form.consent} <LocalLink to="privacy">{t.legal[1]}<ArrowUpRight size={12}/></LocalLink></span></label>
     {status === 'error' && <div className="form-error" role="alert">{t.form.error}</div>}
-    <button className="button form-submit" type="submit" disabled={status === 'sending' || (order && !cart.length)}>{status === 'sending' ? t.form.sending : order ? t.orderSend : t.form.submit}{status === 'sending' ? <LoaderCircle className="spin" size={18}/> : <ArrowUpRight size={18}/>}</button>
+    <button className="button form-submit" type="submit" disabled={status === 'sending' || (order && (!cart.length || ['loading','error'].includes(catalogSource)))}>{status === 'sending' ? t.form.sending : order ? t.orderSend : t.form.submit}{status === 'sending' ? <LoaderCircle className="spin" size={18}/> : <ArrowUpRight size={18}/>}</button>
   </form>;
 }
 
+function ProductVisual({ product, lang }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [product.imageUrl]);
+  return product.imageUrl && !failed ? <img className="catalog-product-photo" src={product.imageUrl} alt={product.name[lang] || product.name.de} loading="lazy" onError={() => setFailed(true)}/> : <ProductArt type={product.type} color={product.color}/>;
+}
 function ProductArt({ type = 'bottle', color = '#b7c7b0' }) {
   return <svg className={`product-art art-${type}`} viewBox="0 0 240 210" fill="none" aria-hidden="true"><defs><linearGradient id={`g-${type}-${color.replace('#','')}`} x1="50" y1="60" x2="200" y2="190" gradientUnits="userSpaceOnUse"><stop stopColor="#fff"/><stop offset="1" stopColor="#e2e4df"/></linearGradient></defs><ellipse cx="123" cy="187" rx="67" ry="8" fill="#102e38" opacity=".09"/>
     {type === 'bottle' && <><path d="M88 55h63c9 0 15 10 17 20l9 96c1 8-5 13-13 13H77c-8 0-13-6-12-13l7-94c1-11 8-22 16-22Z" fill={`url(#g-${type}-${color.replace('#','')})`} stroke="#d3d7d0"/><rect x="88" y="42" width="38" height="18" rx="4" fill="#173c3d"/><path d="M137 65h12c6 0 9 6 9 13v14h-21V65Z" stroke="#9caaa0" strokeWidth="5"/><rect x="77" y="104" width="89" height="59" rx="3" fill={color}/><text x="88" y="126" fontSize="10" fontWeight="700" fill="#15333b">WILLIAMS</text><path d="M89 137h58m-58 8h40" stroke="#15333b" strokeWidth="2" opacity=".5"/><text x="90" y="158" fontSize="6" fill="#15333b">PROFESSIONAL CARE · 5L</text></>}
@@ -181,19 +201,19 @@ function ProductArt({ type = 'bottle', color = '#b7c7b0' }) {
 }
 
 function ShopPage() {
-  const { t, lang, add } = useSite();
+  const { t, lang, add, products, catalogSource, refreshCatalog } = useSite();
   const [category, setCategory] = useState(0); const [search, setSearch] = useState(''); const [addedId, setAddedId] = useState(null); const [selected, setSelected] = useState(null);
   const filtered = products.filter(p => (!category || p.category === category) && `${p.name[lang]} ${p.unit[lang]}`.toLowerCase().includes(search.toLowerCase()));
   const timer = useRef(); useEffect(() => () => clearTimeout(timer.current), []);
   function addItem(id) { add(id); setAddedId(id); clearTimeout(timer.current); timer.current = setTimeout(() => setAddedId(null), 1800); }
-  return <><PageIntro label={t.shopLabel} title={t.shopTitle} text={t.shopText}/><section className="section shop-section"><div className="container"><div className="shop-toolbar"><div className="category-tabs">{t.categories.map((c,i) => <button key={c} className={category === i ? 'active' : ''} onClick={() => setCategory(i)}>{c}</button>)}</div><div className="search-input"><Search size={18}/><input placeholder={t.search} aria-label={t.search} value={search} onChange={e => setSearch(e.target.value)}/>{search && <button className="icon-button" onClick={() => setSearch('')} aria-label={t.reset}><X size={15}/></button>}</div></div><div className="shop-count">{filtered.length} {t.results}<span>{t.demo}</span></div><div className="product-grid">{filtered.map(p => <article className="product-card" key={p.id}><button className="product-image" onClick={() => setSelected(p)} aria-label={p.name[lang]}><span className="product-category">{t.categories[p.category]}</span><ProductArt type={p.type} color={p.color}/><span className="product-view"><Plus size={19}/></span></button><div className="product-copy"><button className="product-name" onClick={() => setSelected(p)}><h3>{p.name[lang]}</h3></button><p>{p.unit[lang]}</p><div className="product-price"><strong>{money(p.price,lang)}</strong><button className={addedId === p.id ? 'added' : ''} onClick={() => addItem(p.id)} aria-label={`${t.add}: ${p.name[lang]}`}>{addedId === p.id ? <Check size={19}/> : <Plus size={19}/>}</button></div><span className="added-text" aria-live="polite">{addedId === p.id ? t.added : '\u00a0'}</span></div></article>)}</div>{!filtered.length && <div className="empty-state"><Search size={38}/><h3>{t.emptySearch}</h3><button className="button" onClick={() => {setCategory(0);setSearch('');}}>{t.reset}<ArrowRight size={17}/></button></div>}</div></section><CallToAction/>{selected && <Dialog onClose={() => setSelected(null)} className="product-dialog"><div className="product-dialog-art"><ProductArt type={selected.type} color={selected.color}/></div><div><Eyebrow>{t.categories[selected.category]}</Eyebrow><h2>{selected.name[lang]}</h2><p>{selected.unit[lang]}</p><strong className="detail-price">{money(selected.price,lang)}</strong><p className="fine-print">{t.demo}</p><button className="button" onClick={() => addItem(selected.id)}>{addedId === selected.id ? t.added : t.add}{addedId === selected.id ? <Check size={18}/> : <ShoppingBag size={18}/>}</button></div></Dialog>}</>;
+  return <><PageIntro label={t.shopLabel} title={t.shopTitle} text={t.shopText}/><section className="section shop-section"><div className="container"><div className="shop-toolbar"><div className="category-tabs">{t.categories.map((c,i) => <button key={c} className={category === i ? 'active' : ''} onClick={() => setCategory(i)}>{c}</button>)}</div><div className="search-input"><Search size={18}/><input placeholder={t.search} aria-label={t.search} value={search} onChange={e => setSearch(e.target.value)}/>{search && <button className="icon-button" onClick={() => setSearch('')} aria-label={t.reset}><X size={15}/></button>}</div></div><div className="shop-count">{filtered.length} {t.results}<span>{t.demo}</span></div>{catalogSource === 'error' ? <div className="catalog-message" role="alert"><p>{modernContent[lang].catalogError}</p><button className="button" onClick={refreshCatalog}>{modernContent[lang].retry}<ArrowRight size={17}/></button></div> : catalogSource === 'loading' ? <div className="catalog-message" role="status"><LoaderCircle className="spin"/><p>{modernContent[lang].loading}</p></div> : <div className="product-grid">{filtered.map(p => <article className="product-card" key={p.id}><button className="product-image" onClick={() => setSelected(p)} aria-label={p.name[lang]}><span className="product-category">{t.categories[p.category]}</span>{p.sample && <span className="sample-product-badge">{({de:"Beispiel",en:"Sample",fr:"Exemple"})[lang]}</span>}<ProductVisual product={p} lang={lang}/><span className="product-view"><Plus size={19}/></span></button><div className="product-copy"><button className="product-name" onClick={() => setSelected(p)}><h3>{p.name[lang]}</h3></button><p>{p.unit[lang]}</p><div className="product-price"><strong>{money(p.price,lang)}</strong><button className={addedId === p.id ? 'added' : ''} onClick={() => addItem(p.id)} aria-label={`${t.add}: ${p.name[lang]}`}>{addedId === p.id ? <Check size={19}/> : <Plus size={19}/>}</button></div><span className="added-text" aria-live="polite">{addedId === p.id ? t.added : '\u00a0'}</span></div></article>)}</div>}{!filtered.length && !['loading','error'].includes(catalogSource) && <div className="empty-state"><Search size={38}/><h3>{products.length ? t.emptySearch : modernContent[lang].emptyCatalog}</h3><button className="button" onClick={() => {setCategory(0);setSearch('');}}>{t.reset}<ArrowRight size={17}/></button></div>}</div></section><CallToAction/>{selected && <Dialog onClose={() => setSelected(null)} className="product-dialog"><div className="product-dialog-art"><ProductVisual product={selected} lang={lang}/></div><div><Eyebrow>{t.categories[selected.category]}</Eyebrow><h2>{selected.name[lang]}</h2><p>{selected.unit[lang]}</p>{selected.description?.[lang] && <p>{selected.description[lang]}</p>}<strong className="detail-price">{money(selected.price,lang)}</strong><p className="fine-print">{selected.sample ? content[lang].demo : t.demo}</p><button className="button" onClick={() => addItem(selected.id)}>{addedId === selected.id ? t.added : t.add}{addedId === selected.id ? <Check size={18}/> : <ShoppingBag size={18}/>}</button></div></Dialog>}</>;
 }
 function Dialog({ children, onClose, className = '' }) {
   const { t } = useSite(); const ref = useRef();
   useEffect(() => { const d = ref.current; d.showModal(); const before = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = before; }; }, []);
   return <dialog ref={ref} className={className} aria-label={className.includes('cart-dialog') ? t.cart : t.nav[5]} onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { if (e.target === ref.current) onClose(); }}><div className="dialog-body"><button className="dialog-close icon-button" onClick={onClose} aria-label={t.close}><X/></button>{children}</div></dialog>;
 }
-function CartLines() { const { t, lang, cart, quantity } = useSite(); return <div className="cart-lines">{cart.map(item => { const p = products.find(p => p.id === item.id); return <div className="cart-line" key={item.id}><div className="cart-art"><ProductArt type={p.type} color={p.color}/></div><div className="cart-line-info"><h3>{p.name[lang]}</h3><p>{p.unit[lang]}</p><div className="quantity-control"><button onClick={() => quantity(item.id, item.qty - 1)} aria-label={`${t.quantity} −: ${p.name[lang]}`}><Minus size={13}/></button><span>{item.qty}</span><button onClick={() => quantity(item.id, item.qty + 1)} disabled={item.qty >= 99} aria-label={`${t.quantity} +: ${p.name[lang]}`}><Plus size={13}/></button></div></div><div className="cart-line-end"><strong>{money(p.price * item.qty, lang)}</strong><button className="icon-button" onClick={() => quantity(item.id, 0)} aria-label={`${t.remove}: ${p.name[lang]}`}><Trash2 size={16}/></button></div></div>; })}</div>; }
+function CartLines() { const { t, lang, cart, quantity, products } = useSite(); return <div className="cart-lines">{cart.filter(item => products.some(p=>p.id===item.id)).map(item => { const p = products.find(p => p.id === item.id); return <div className="cart-line" key={item.id}><div className="cart-art"><ProductVisual product={p} lang={lang}/></div><div className="cart-line-info"><h3>{p.name[lang]}</h3><p>{p.unit[lang]}</p><div className="quantity-control"><button onClick={() => quantity(item.id, item.qty - 1)} aria-label={`${t.quantity} −: ${p.name[lang]}`}><Minus size={13}/></button><span>{item.qty}</span><button onClick={() => quantity(item.id, item.qty + 1)} disabled={item.qty >= 99} aria-label={`${t.quantity} +: ${p.name[lang]}`}><Plus size={13}/></button></div></div><div className="cart-line-end"><strong>{money(p.price * item.qty, lang)}</strong><button className="icon-button" onClick={() => quantity(item.id, 0)} aria-label={`${t.remove}: ${p.name[lang]}`}><Trash2 size={16}/></button></div></div>; })}</div>; }
 function CartDrawer() { const { t, lang, cart, count, total, setCartOpen, setCart } = useSite(); return <Dialog onClose={() => setCartOpen(false)} className="cart-dialog"><div className="cart-heading"><ShoppingBag size={23}/><h2>{t.cart} <span>({count})</span></h2></div>{cart.length ? <><CartLines/><div className="cart-summary"><div><span>{t.subtotal}</span><strong>{money(total,lang)}</strong></div><p>{t.vat}</p><Button to="checkout">{t.checkout}</Button><button className="clear-cart" onClick={() => setCart([])}>{t.clear}</button></div></> : <div className="empty-state"><ShoppingBag size={49} strokeWidth={1}/><h3>{t.emptyCart}</h3><Button to="shop">{t.browse}</Button></div>}</Dialog>; }
 function CheckoutPage() { const { t, lang, cart, total } = useSite(); return <><PageIntro label={t.cart} title={t.orderTitle} text={t.orderText}/><section className="section"><div className="container checkout-grid"><div><LocalLink to="shop" className="text-link dark-link">← {t.backShop}</LocalLink>{cart.length ? <><CartLines/><div className="checkout-total"><span>{t.subtotal}</span><strong>{money(total,lang)}</strong></div><p className="fine-print">{t.vat}</p></> : <p className="empty-message">{t.emptyCart}</p>}</div><InquiryForm order/></div></section></>; }
 
@@ -218,4 +238,4 @@ const legalCopy = {
   }
 };
 function LegalPage({ type }) { const { t, lang } = useSite(); const title = t.legal[['impressum','privacy','terms','withdrawal'].indexOf(type)]; return <><PageIntro label="WILLIAMS FACILITY SERVICES GMBH" title={title}/><section className="section"><article className="container legal-content"><div className="legal-draft"><ShieldCheck size={22}/>{t.legalDraft}</div>{legalCopy[lang][type].map(([heading, text]) => <section key={heading}><h2>{heading}</h2><p>{text}</p></section>)}</article></section></>; }
-function Footer({ onStorage }) { const { t } = useSite(); return <footer className="footer"><div className="container"><div className="footer-grid"><div className="footer-brand"><Logo footer/><p>{t.footerText}</p><span className="footer-slogan">{t.slogan}</span></div><div><h3>{t.footerServices}</h3>{[2,3,4,5].map(i => <LocalLink to={navPaths[i]} key={i}>{t.nav[i]}</LocalLink>)}</div><div><h3>{t.footerCompany}</h3>{[1,6,7].map(i => <LocalLink to={navPaths[i]} key={i}>{t.nav[i]}</LocalLink>)}</div><div className="footer-talk"><h3>{t.footerContact}</h3><p>{t.ctaText}</p><LocalLink to="contact">{t.quote}<ArrowUpRight size={19}/></LocalLink><div className="footer-languages">DE <span>/</span> EN <span>/</span> FR</div></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Williams Facility Services GmbH. {t.footerRights}</span><div>{['impressum','privacy','terms','withdrawal'].map((p,i) => <LocalLink key={p} to={p}>{t.legal[i]}</LocalLink>)}<button onClick={onStorage}><ShieldCheck size={14}/><span className="sr-only">Local storage info</span></button></div></div></div></footer>; }
+function Footer({ onStorage }) { const { t } = useSite(); return <footer className="footer"><div className="container"><div className="footer-wordmark" aria-hidden="true">WILLIAMS<ArrowUpRight/></div><div className="footer-grid"><div className="footer-brand"><Logo footer/><p>{t.footerText}</p><span className="footer-slogan">{t.slogan}</span></div><div><h3>{t.footerServices}</h3>{[2,3,4,5].map(i => <LocalLink to={navPaths[i]} key={i}>{t.nav[i]}</LocalLink>)}</div><div><h3>{t.footerCompany}</h3>{[1,6,7].map(i => <LocalLink to={navPaths[i]} key={i}>{t.nav[i]}</LocalLink>)}</div><div className="footer-talk"><h3>{t.footerContact}</h3><p>{t.ctaText}</p><LocalLink to="contact">{t.quote}<ArrowUpRight size={19}/></LocalLink><div className="footer-languages">DE <span>/</span> EN <span>/</span> FR</div></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Williams Facility Services GmbH. {t.footerRights}</span><div>{['impressum','privacy','terms','withdrawal'].map((p,i) => <LocalLink key={p} to={p}>{t.legal[i]}</LocalLink>)}<LocalLink to="admin">Admin</LocalLink><button onClick={onStorage}><ShieldCheck size={14}/><span className="sr-only">Local storage info</span></button></div></div></div></footer>; }

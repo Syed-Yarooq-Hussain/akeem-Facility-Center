@@ -1,83 +1,106 @@
 # Williams Facility Services GmbH
 
-React 19 + Vite frontend, Node API and MongoDB persistence. Prepared for a Git repository and Vercel. German (default), English and French routes have independent URLs.
+A photographic, multilingual React website with a MongoDB-backed hygiene catalog, quotation cart and secure product manager. Prepared for Vercel, including Node serverless APIs.
 
-## Run locally
-
-Requires Node.js 22 or newer.
+## Start locally
 
 ```powershell
 npm install
+# Only if .env does not already exist:
 Copy-Item .env.example .env
-# Enter your MongoDB Atlas connection string in .env
 npm run dev
 ```
 
-Frontend: http://localhost:5173 · Local API: http://127.0.0.1:3001
+Website: http://localhost:5173 · Admin: http://localhost:5173/admin · Local API: http://127.0.0.1:3001
 
-The website and cart work without MongoDB. Form submissions require a working database and correctly report an error when unavailable. Successful submissions return a reference after MongoDB confirms the write. There is no simulated successful submission.
+The site and admin support German, English and French. Node 22 is recommended. If Windows blocks writes inside Documents, use the working Git copy at `C:\Users\HP\AppData\Local\WilliamsFacility`. Preserve your existing `.env` when updating.
+
+## Enable MongoDB and administration
+
+1. Create a MongoDB Atlas database and database user, with network access appropriate to the deployment.
+2. Add these server-only variables to `.env` locally and Vercel **Settings → Environment Variables**:
+
+```dotenv
+MONGODB_URI=your_actual_atlas_connection_string
+MONGODB_DB=williams_facility
+```
+
+3. Run:
+
+```powershell
+npm run admin:setup
+```
+
+Choose a private password of at least 12 characters. The command prints a salted password hash and random session secret. Save your password privately and add the printed values to your server environment:
+
+```dotenv
+ADMIN_PASSWORD_HASH=the_generated_scrypt_hash
+ADMIN_SESSION_SECRET=the_generated_session_secret
+```
+
+4. Restart locally, or redeploy Vercel after setting the variables. Open `/admin`, `/en/admin`, `/de/admin` or `/fr/admin`.
+
+There is no default admin password or public registration. Admin features fail closed until credentials and MongoDB are configured. Never prefix secrets with `VITE_`, commit `.env`, or put passwords in repository files.
+
+## Product manager
+
+- Add/edit names, pack sizes, descriptions, categories and euro prices.
+- German text is required; empty English/French translations fall back to German.
+- Upload JPEG, PNG or WebP photos up to 2 MB. Photos are stored in MongoDB and served by `/api/media`; no extra storage account is required. HTTPS image URLs are also supported.
+- Publish/unpublish products; drafts are hidden from the public shop.
+- Archive products while preserving historical data.
+- Optionally import sample products. Re-importing never overwrites edits.
+- View the latest 100 service enquiries and 100 product enquiries in the protected inbox.
+
+Changes are read from MongoDB without rebuilding or redeploying. Open storefront tabs can refresh to see changes. Before a live catalog is created, the original eight sample products remain labeled examples. Adding the first product (including a draft) or importing samples activates the database catalog. An empty live catalog stays empty; it does not silently restore samples. Catalog limit: 500 non-archived products.
+
+Collections: `products`, `product_images`, `catalog_settings`, `inquiries`, `orders`, `admin_login_attempts`. Sessions use expiring HMAC-signed HTTP-only cookies, Secure in production and SameSite=Strict. Admin mutations require the same origin. Login attempts are throttled using MongoDB. Uploads are checked for type, magic bytes and size. Rotating `ADMIN_SESSION_SECRET` invalidates existing sessions.
+
+## Shop and enquiries
+
+Search, categories, previews, persistent cart and quantity controls are included. Product enquiries use current server-side prices; client-submitted prices are ignored. Hidden/archived products cannot be quoted. Success is returned only after the database write completes.
+
+The shop collects **non-binding quotation requests**. It does not accept payment or create binding purchases. Product availability, delivery and final terms need client confirmation before direct paid checkout is enabled. Email notifications are not included; use the admin inbox to view enquiries.
+
+## Public configuration
+
+```dotenv
+VITE_WHATSAPP_NUMBER=491234567890
+VITE_SITE_URL=https://your-actual-domain.example
+```
+
+The WhatsApp number above is a demo. Replace it with the real country-code-prefixed number, digits only. Leave `VITE_SITE_URL` unset for the first Vercel preview so canonical links use the actual deployment origin. Public `VITE_` values are embedded during builds; redeploy after changing them.
+
+## Deployment
+
+Repository: https://github.com/Md220693/Williams-Facility-Services, branch `main`. Import into Vercel as Vite; build `npm run build`, output `dist`, root `./`. The tracked `vercel.json` handles page/API routes. Backend endpoints deploy with the same project; no separate Express host is needed.
+
+Configure private environment variables, redeploy, then verify `/admin`, create a real product and submit an enquiry. A paid custom domain is optional; the generated `.vercel.app` URL works for preview. Legal documents remain drafts until completed and reviewed.
+
+## Verification
 
 ```powershell
 npm test
 npm run build
 ```
 
-## Features
+Tests cover password verification, session tampering/expiry, authentication, origin checks, throttling, product/photo validation, publication state, CRUD, server pricing and enquiry persistence/failure responses. `tests/memory-db.js` is test-only; production uses MongoDB.
 
-- Responsive home, about, cleaning (all three categories), laundry, facility services, careers and contact pages.
-- German, English and French navigation, content, forms, legal drafts and shop.
-- Local photographs, branded SVG product illustrations, mobile navigation and WhatsApp link.
-- Searchable sample catalog, category filters, product previews, persistent cart, quantities and product quotation requests.
-- Cleaning, laundry and career enquiry form with server validation and honeypot.
-- MongoDB collections `inquiries` and `orders`. The latter stores **non-binding product enquiries**, not paid purchase orders.
-- Trusted catalog prices and totals calculated on the server. Submitted prices are ignored.
-- Language metadata, canonical URLs, language alternate links, favicon and robots file.
-- Accessible native modal dialogs, keyboard controls, skip link and reduced-motion support.
+Optional browser checks with Chrome installed:
 
-## Configure
+```powershell
+npm install --no-save --package-lock=false playwright
+node tests/serve-test.mjs
+# Second terminal:
+node scripts/admin-browser-check.mjs
+```
 
-| Variable | Purpose |
-| --- | --- |
-| `MONGODB_URI` | Private MongoDB Atlas connection string; server only |
-| `MONGODB_DB` | Database name; defaults to `williams_facility` |
-| `VITE_WHATSAPP_NUMBER` | Public WhatsApp number with country code, digits only |
-| `VITE_SITE_URL` | Final public HTTPS origin, without a trailing slash |
-| `PORT` | Local API port; defaults to `3001` |
+The explicit test server uses port 5180 and an isolated in-memory adapter. Normal dev/build/deployment commands never start it. Its password is only for that test process. Browser checks cover multilingual desktop/mobile pages, uploads, product create/edit/draft/publish/archive, store prices, saved quotation requests, inbox and logout. Screenshots go to ignored `test-results/`.
 
-Never put the database URI in a variable prefixed with `VITE_`, commit `.env`, or put credentials in frontend code. Vite variables are public and embedded at build time.
+No real Atlas connection was available during implementation. The client's production connection still needs verification; test-adapter checks do not prove a working Atlas connection.
 
-Edit sample products in `shared/catalog.js`, translations in `src/content.js`, and legal draft content in `src/App.jsx`. Product prices use integer euro cents. WhatsApp defaults to a **dummy number**, as requested; replace it before launch. Contact details, credentials, certifications, testimonials and company statistics have not been invented.
+## Client content
 
-## Git and Vercel deployment
+Supply the actual address, directors, company registration, VAT ID, business email, phone and WhatsApp. Complete legal notice, privacy, terms and applicable delivery/withdrawal documents for actual business processes. Legal pages are drafts. No testimonials, customer logos, certifications or company statistics were invented or copied from the reference.
 
-Deployment has intentionally been left for the next step requested by the project owner. No repository or public deployment is created by this project.
-
-1. Create a new Git repository in **this project directory**, commit the source and lockfile, and push to your chosen GitHub repository. Do not use a parent directory’s repository.
-2. Import the repository into Vercel; select Vite. Build command: `npm run build`; output directory: `dist`. The tracked `vercel.json` configures React page routes and API routes.
-3. Add `MONGODB_URI`, `MONGODB_DB`, `VITE_WHATSAPP_NUMBER` and `VITE_SITE_URL` in Vercel’s environment settings. Redeploy when public Vite variables change.
-4. In Atlas, create a database user limited to this database, configure network access for the deployment environment, and keep connection credentials private.
-5. Send a real inquiry and product inquiry. Check their returned references against documents in Atlas. No email notification or admin interface is included: enquiries are stored in MongoDB.
-
-## Required client input before production
-
-- Actual business address, managing director, company registration, VAT ID, email, phone and WhatsApp number.
-- Actual product catalog, photos, availability, pricing and delivery terms. Current products and prices are clearly labeled examples.
-- Final service coverage, working hours and hiring details.
-- Final legal review and completed legal notice, privacy information, terms, delivery information and withdrawal documentation, as applicable to the actual business model.
-- Production domain and MongoDB Atlas URI. Retention, deletion and access policies must match actual operational practices.
-
-The current shop collects **quotation requests**. It does not take payments or create binding sales contracts. A payment provider, confirmed inventory, shipping rules, final contractual documents and purchase confirmation workflow are needed if direct online checkout is required.
-
-Do not publish draft legal pages as final legal compliance. Database APIs store requests only; connect notifications or an authenticated back office if the team needs to manage them outside Atlas. Configure production abuse prevention/rate limits at the hosting edge before a public launch.
-
-## Assets
-
-Stock photography: Unsplash (see `public/images/CREDITS.md`), embedded unchanged in portable SVG containers. Product visuals are original SVG illustrations rendered in React; sample packaging is illustrative. Replace with verified client product images for the final catalog. DM Sans and Manrope are bundled locally in `src/fonts.css`; their licenses are in `licenses/`. Loading the website does not request external image or font services.
-
-## Verification performed
-
-The production build passed, along with six API tests. Chrome checks covered 36 desktop pages and 18 mobile pages, all business images, product search, cart persistence and totals, language switching, mobile navigation and database-unavailable form handling. Actual MongoDB writes still require the client's Atlas connection string; handler persistence was verified with a test database adapter.
-
-Optional repeatable browser checks: install Playwright locally with `npm install --no-save --package-lock=false playwright`, start `npm run dev`, and run `node scripts/browser-check.mjs` with Chrome installed. Screenshots are saved in ignored `test-results/`. The failure-path browser check expects MongoDB to be unconfigured.
-
-In this Codex session Windows rejected shell-created files in the Documents workspace, so dependencies, build output and browser verification ran in a temporary mirror. All source files, photos, fonts, lockfile and configuration are saved in the requested workspace. If `npm install` encounters the same restriction on your machine, move the project to a normal writable development folder and run the commands there.
+The redesign follows the reference's editorial scale, open spacing and teal direction while preserving the cleaning/laundry/hygiene scope. Locally bundled stock photos illustrate services and do not claim to depict Williams staff or premises. See `public/images/CREDITS.md`. Locally bundled DM Sans and Manrope licenses are in `licenses/`.

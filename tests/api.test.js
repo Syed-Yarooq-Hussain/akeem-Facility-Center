@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateContact, validateItems } from '../server/validation.js';
 import { makeHandler } from '../server/handlers.js';
+import { products } from '../shared/catalog.js';
 
 const contact = { name: 'Test User', email: 'test@example.com', service: '3', message: 'Weekly hotel laundry collection', consent: true, language: 'en' };
 function response() { return { headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(code) { this.code = code; return this; }, json(value) { this.body = value; return this; } }; }
@@ -27,7 +28,7 @@ test('storage failure never returns a false success', async () => {
   assert.equal(res.code, 503); assert.equal(res.body.reference, undefined); assert.equal(JSON.stringify(res.body).includes('secret'), false);
 });
 test('product enquiries save trusted totals and do not create purchase orders', async () => {
-  let record; const handler = makeHandler('orders', async () => ({ collection: () => ({ insertOne: async data => { record = data; } }) }));
+  let record; const handler = makeHandler('orders', async () => ({ collection: () => ({ insertOne: async data => { record = data; } }) }), async () => ({ products }));
   const res = response(); await handler(request({...contact, items:[{id:'hand-soap',qty:3}], total:1}),res);
   assert.equal(res.code, 201); assert.equal(record.illustrativeTotalCents,3870); assert.equal(record.type,'non_binding_product_enquiry');
 });

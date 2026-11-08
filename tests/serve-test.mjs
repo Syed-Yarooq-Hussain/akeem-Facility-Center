@@ -1,0 +1,22 @@
+// Explicit, isolated test server. Never used by npm run dev, builds, or Vercel.
+import express from 'express';
+import { createServer } from 'vite';
+import { memoryDatabase } from './memory-db.js';
+import { makeAdminHandler } from '../server/admin.js';
+import { makeCatalogHandler } from '../server/catalog.js';
+import { makeMediaHandler } from '../api/media.js';
+import { makeHandler } from '../server/handlers.js';
+import { hashPassword } from '../server/auth.js';
+const db=memoryDatabase();
+process.env.ADMIN_PASSWORD_HASH=hashPassword('browser-test-password-123');
+process.env.ADMIN_SESSION_SECRET='isolated-browser-test-secret-not-for-production-123';
+const app=express();app.use(express.json({limit:'3mb'}));
+app.all('/api/admin',makeAdminHandler(async()=>db));
+app.all('/api/products',makeCatalogHandler(async()=>db));
+app.all('/api/media',makeMediaHandler(async()=>db));
+app.all('/api/inquiries',makeHandler('inquiries',async()=>db));
+app.all('/api/orders',makeHandler('orders',async()=>db));
+const vite=await createServer({server:{middlewareMode:true},appType:'spa'});
+app.use(vite.middlewares);
+const server=app.listen(5180,'127.0.0.1',()=>console.log('ISOLATED browser QA server: http://127.0.0.1:5180 (in-memory test adapter, not production)'));
+const stop=async()=>{server.close();await vite.close();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);

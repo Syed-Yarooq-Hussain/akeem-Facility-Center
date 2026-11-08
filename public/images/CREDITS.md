@@ -1,5 +1,18 @@
 # Photography
 
+## Added for the editorial redesign
+
+Pexels stock photographs, bundled locally as unchanged JPEGs inside SVG containers. License: https://www.pexels.com/license/
+
+- Surface cleaning (`team.svg`): https://www.pexels.com/photo/4239037/
+- Window detail (`detail.svg`): https://www.pexels.com/photo/4239091/
+- Cleaning crew (`crew.svg`): https://www.pexels.com/photo/6195129/
+- Towels (`linen.svg`): https://www.pexels.com/photo/4210378/
+- Hotel (`hotel.svg`): https://www.pexels.com/photo/271624/
+- Cleaning equipment in use (`products.svg`): https://www.pexels.com/photo/4239145/
+
+These illustrate the service areas and do not claim to depict Williams employees or premises. The reference website informed layout and typography; its company claims, testimonials and customer logos were not reused.
+
 Stock illustrations of business areas; these do not depict Williams staff or premises.
 
 - Office: image asset ID `photo-1497366811353-6870744d04b2`, https://images.unsplash.com/photo-1497366811353-6870744d04b2

@@ -23,12 +23,12 @@ export function validateContact(body, order = false) {
   }
   return data;
 }
-export function validateItems(items) {
-  if (!Array.isArray(items) || !items.length || items.length > products.length) throw new ValidationError('Invalid cart');
+export function validateItems(items, catalog = products) {
+  if (!Array.isArray(items) || !items.length || items.length > 100) throw new ValidationError('Invalid cart');
   const seen = new Set();
   return items.map(item => {
     if (!item || typeof item !== 'object') throw new ValidationError('Invalid item');
-    const product = products.find(p => p.id === item.id);
+    const product = catalog.find(p => p.id === item.id && p.active !== false);
     if (!product || seen.has(item.id) || !Number.isInteger(item.qty) || item.qty < 1 || item.qty > 99) throw new ValidationError('Invalid cart item');
     seen.add(item.id);
     return { productId: product.id, name: product.name, quantity: item.qty, illustrativeUnitPriceCents: product.price, illustrativeLineTotalCents: product.price * item.qty };

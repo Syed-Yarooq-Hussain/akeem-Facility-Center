@@ -1,3 +1,10 @@
 User-agent: *
 Allow: /
 Disallow: /checkout
+Disallow: /admin
+Disallow: /de/admin
+Disallow: /en/admin
+Disallow: /fr/admin
+Disallow: /de/checkout
+Disallow: /en/checkout
+Disallow: /fr/checkout
