@@ -1,5 +1,13 @@
 # Photography
 
+## Premium layout additions
+
+- Living room cleaning (`hero-interior.svg`): https://www.pexels.com/photo/woman-cleaning-living-room-with-mop-36730122/
+- Precision cleaning (`precision.svg`): https://www.pexels.com/photo/4239125/
+- Medical reception (`medical.svg`): https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d
+
+Original photographs are embedded unchanged. The Zarla medical cleaning and Squarespace cleaning services demos informed the layout direction; no company claims or customer reviews were copied. Client-supplied vector logo is preserved at `images/logo.svg`; `brand/williams-logo.svg` trims its empty display margins.
+
 ## Added for the editorial redesign
 
 Pexels stock photographs, bundled locally as unchanged JPEGs inside SVG containers. License: https://www.pexels.com/license/

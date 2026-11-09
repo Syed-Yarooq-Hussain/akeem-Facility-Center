@@ -4,6 +4,7 @@ import { ArrowUpRight, ArrowRight, Check, ChevronDown, ChevronRight, ShoppingBag
 import { content, navPaths } from './content';
 import AdminPanel from './AdminPanel';
 import HomeModern from './HomeModern';
+import BrandLogo from './BrandLogo';
 import { modernContent } from './modern-content';
 
 const Context = createContext();
@@ -15,7 +16,7 @@ const money = (amount, lang) => new Intl.NumberFormat({ de: 'de-DE', en: 'en-GB'
 function LocalLink({ to = '', children, ...props }) { const { lang } = useSite(); return <Link to={`/${lang}${to ? '/' + to : ''}`} {...props}>{children}</Link>; }
 function Button({ to = 'contact', children, light = false, className = '', ...props }) { return <LocalLink to={to} className={`button ${light ? 'button-light' : ''} ${className}`} {...props}>{children}<ArrowUpRight size={18} /></LocalLink>; }
 function Eyebrow({ children }) { return <div className="eyebrow"><span />{children}</div>; }
-function Logo({ footer = false }) { return <LocalLink className={`logo ${footer ? 'logo-light' : ''}`} aria-label="Williams Facility Services – Home"><span className="brand-mark">W<span /></span><span className="brand-name">WILLIAMS<small>FACILITY SERVICES GMBH</small></span></LocalLink>; }
+function Logo({ footer = false }) { return <LocalLink className={`logo ${footer ? 'logo-light' : ''}`} aria-label="Williams Facility Services – Home"><BrandLogo/></LocalLink>; }
 function WhatsAppIcon({ size = 22 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.6 7.5L3 20.7l1.4-4.8a8.5 8.5 0 1 1 16.1-4.1Z"/><path d="M8.3 7.2c-.9.5-1 1.4-.5 2.7 1.1 2.8 3.6 5.1 6.2 5.8 1.3.3 2.2-.2 2.7-1.1l-2.3-1.4-1.1 1c-1.8-.7-3.3-2.1-4-3.7l1-1.1-1.2-2.4Z"/></svg>; }
 
 export default function App() {
@@ -122,7 +123,7 @@ function LanguageSelect() {
 
 function HomePage() {
   const { t, lang } = useSite();
-  return <HomeModern {...{ t, lang, LocalLink, Button, Eyebrow, ServiceCards, Process, CallToAction }}/>;
+  return <HomeModern {...{ t, lang, LocalLink, Button, Eyebrow, ServiceCards, Process, FAQ, InquiryForm }}/>;
 }
 function HygieneScene() { return <div className="hygiene-scene" aria-hidden="true"><div className="scene-circle"/><div className="scene-products"><div className="scene-product one"><ProductArt type="bottle" color="#c6cbbd"/></div><div className="scene-product two"><ProductArt type="rolls"/></div><div className="scene-product three"><ProductArt type="dispenser"/></div><div className="scene-product four"><ProductArt type="spray" color="#b6c79c"/></div></div><span className="scene-word">ESSENTIALS, ELEVATED.</span></div>; }
 function ServiceCards() {

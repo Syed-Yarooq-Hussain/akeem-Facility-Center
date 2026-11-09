@@ -1,0 +1,8 @@
+.brand-logo-image{display:block;width:240px;height:auto;max-width:100%;object-fit:contain;flex-shrink:0}
+.logo-light:has(.brand-logo-image){display:inline-flex;width:max-content;max-width:100%;background:#faf8f5;padding:9px 15px;border-radius:8px}
+.logo-light .brand-logo-image{width:235px}
+.admin-brand .brand-logo-image{width:225px}
+@media(max-width:1050px){.brand-logo-image{width:215px}}
+@media(max-width:800px){.brand-logo-image{width:210px}}
+@media(max-width:560px){.brand-logo-image{width:172px}.admin-brand .brand-logo-image{width:170px}.logo-light .brand-logo-image{width:220px}}
+@media(max-width:370px){.brand-logo-image,.admin-brand .brand-logo-image{width:150px}}
