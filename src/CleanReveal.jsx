@@ -21,11 +21,12 @@ export default function CleanReveal({ lang, LocalLink }) {
     const update = () => {
       frame = 0;
       if (!section.current) return;
-      if (reduced.matches || innerHeight <= 600) return paint(50);
-      const rect = section.current.getBoundingClientRect();
+      if (reduced.matches) return paint(50);
+      const rect = stage.current.getBoundingClientRect();
       const header = document.querySelector('.header')?.offsetHeight || 0;
-      const distance = section.current.offsetHeight - (innerHeight - header);
-      paint(Math.max(0, Math.min(100, (header - rect.top) / Math.max(1, distance) * 100)));
+      const start = innerHeight * .85;
+      const end = header + 20;
+      paint(Math.max(0, Math.min(100, (start - rect.top) / Math.max(1, start - end) * 100)));
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
@@ -35,7 +36,7 @@ export default function CleanReveal({ lang, LocalLink }) {
     return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); reduced.removeEventListener('change', schedule); };
   }, []);
   return <section className="clean-story" ref={section} aria-labelledby="clean-title">
-    <div className="clean-sticky"><div className="container">
+    <div className="clean-flow"><div className="container">
       <div className="clean-heading"><div><div className="eyebrow"><span />{c.tag}</div><h2 id="clean-title">{c.title}</h2></div><p>{c.text}</p></div>
       <div className="clean-stage" ref={stage} style={{ '--clean': '0%' }} role="img" aria-label={c.alt}>
         <div className="clean-photo clean-before" />
