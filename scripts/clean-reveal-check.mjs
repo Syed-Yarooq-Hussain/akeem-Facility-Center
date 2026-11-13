@@ -1,0 +1,41 @@
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage();
+const errors = [];
+page.on('pageerror', e => errors.push(e.message));
+await mkdir('test-results', { recursive: true });
+try {
+  for (const [width, height] of [[1440, 1000], [390, 844]]) {
+    await page.setViewportSize({ width, height });
+    for (const lang of ['de', 'en', 'fr']) {
+      await page.goto(`http://localhost:5173/${lang}`);
+      await page.locator('.clean-stage').waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      const bounds = await page.locator('.clean-story').evaluate(el => ({ top: el.getBoundingClientRect().top + scrollY, height: el.offsetHeight, header: document.querySelector('.header').offsetHeight }));
+      const progress = async fraction => {
+        await page.evaluate(({ bounds, fraction }) => scrollTo(0, bounds.top - bounds.header + (bounds.height - (innerHeight - bounds.header)) * fraction), { bounds, fraction });
+        await page.waitForTimeout(180);
+        return page.locator('.clean-stage').evaluate(el => parseFloat(el.style.getPropertyValue('--clean')));
+      };
+      assert.ok(await progress(0) < 2);
+      assert.ok(Math.abs(await progress(.5) - 50) < 2);
+      await page.screenshot({ path: `test-results/clean-${lang}-${width}.png` });
+      assert.ok(await progress(1) > 98);
+      assert.ok(await progress(0) < 2, 'Reverse scroll resets reveal');
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'No horizontal overflow');
+      const slider = page.locator('.clean-footer input');
+      await slider.focus();
+      await slider.press('End');
+      assert.equal(await slider.inputValue(), '100');
+    }
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('http://localhost:5173/en');
+  await page.locator('.clean-stage').waitFor();
+  assert.equal(await page.locator('.clean-stage').evaluate(el => parseFloat(el.style.getPropertyValue('--clean'))), 50);
+  assert.equal(await page.locator('.clean-sticky').evaluate(el => getComputedStyle(el).position), 'relative');
+  assert.deepEqual(errors, []);
+  console.log('PASS: desktop/mobile, three languages, forward/reverse scroll, keyboard slider, reduced motion, no overflow or runtime errors.');
+} finally { await browser.close(); }

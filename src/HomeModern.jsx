@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUpRight, Check, Sparkles, Truck, Shirt, ShieldCheck, Users, CalendarClock, HeartPulse } from 'lucide-react';
 import { modernContent } from './modern-content';
 import { premiumContent } from './premium-content';
+import CleanReveal from './CleanReveal';
 
 export default function HomeModern({ t, lang, LocalLink, Button, Eyebrow, ServiceCards, Process, FAQ, InquiryForm }) {
   const c=modernContent[lang], p=premiumContent[lang];
@@ -15,6 +16,7 @@ export default function HomeModern({ t, lang, LocalLink, Button, Eyebrow, Servic
       </div>
     </section>
     <div className="premium-assurance"><div className="container">{t.pillars.map((text,i)=>{const Icon=[ShieldCheck,CalendarClock,Users][i];return <div key={text}><Icon size={20}/><span>{text}</span></div>;})}</div></div>
+    <CleanReveal lang={lang} LocalLink={LocalLink}/>
     <section id="services" className="section premium-services">
       <div className="container"><div className="premium-intro"><Eyebrow>{p.introTag}</Eyebrow><h2>{p.introTitle}<br/><em>{p.introAccent}</em></h2><p>{p.introText}</p></div><ServiceCards/></div>
     </section>
