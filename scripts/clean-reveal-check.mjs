@@ -4,13 +4,14 @@ import { mkdir } from 'node:fs/promises';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage();
 const errors = [];
+const base = process.env.TEST_BASE_URL || 'http://localhost:5173';
 page.on('pageerror', e => errors.push(e.message));
 await mkdir('test-results', { recursive: true });
 try {
   for (const [width, height] of [[1440, 1000], [390, 844], [320, 740]]) {
     await page.setViewportSize({ width, height });
     for (const lang of ['de', 'en', 'fr']) {
-      await page.goto(`http://localhost:5173/${lang}`);
+      await page.goto(`${base}/${lang}`);
       await page.locator('.clean-stage').waitFor();
       await page.evaluate(() => document.fonts.ready);
       const bounds = await page.locator('.clean-stage').evaluate(el => ({ top: el.getBoundingClientRect().top + scrollY, header: document.querySelector('.header').offsetHeight }));
@@ -47,7 +48,7 @@ try {
     }
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('http://localhost:5173/en');
+  await page.goto(`${base}/en`);
   await page.locator('.clean-stage').waitFor();
   assert.equal(await page.locator('.clean-stage').evaluate(el => parseFloat(el.style.getPropertyValue('--clean'))), 50);
   assert.equal(await page.locator('.clean-flow').evaluate(el => getComputedStyle(el).position), 'static');
