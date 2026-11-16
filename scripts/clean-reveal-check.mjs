@@ -35,7 +35,7 @@ try {
       await page.locator('.faq-grid summary').first().click();
       assert.equal(await page.locator('.faq-grid details').first().getAttribute('open'), '');
       await page.locator('.faq-grid summary').first().click();
-      assert.equal(await page.locator('.header-quote').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(36, 75, 219)');
+      assert.equal(await page.locator('.header-quote').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(23, 107, 128)');
       if (lang === 'en') {
         await page.evaluate(async () => {
           await Promise.all([...document.images].map(img => { img.loading = 'eager'; return img.decode().catch(() => {}); }));
