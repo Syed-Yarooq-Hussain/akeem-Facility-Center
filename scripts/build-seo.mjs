@@ -1,15 +1,18 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createServer, loadEnv } from 'vite';
+import { build, loadEnv } from 'vite';
+import { pathToFileURL } from 'node:url';
 import { languages } from '../shared/languages.js';
 import { allPages, indexablePages, siteOrigin } from '../shared/seo-config.js';
 const env={...loadEnv('production',process.cwd(),''),...process.env};
 const origin=siteOrigin(env.VITE_SITE_URL);
 const escape=s=>String(s).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
 const template=await fs.readFile('dist/index.html','utf8');
-const server=await createServer({mode:'production',server:{middlewareMode:true},appType:'custom'});
-try{
- const {render,pageSeo}=await server.ssrLoadModule('/src/entry-server.jsx');
+// Compile a production server bundle; do not start Vite's development server in CI.
+const renderDirectory=path.resolve('node_modules/.cache/williams-seo-render');
+await build({mode:'production',build:{ssr:'src/entry-server.jsx',outDir:renderDirectory,emptyOutDir:true,minify:false,rollupOptions:{output:{entryFileNames:'render.mjs'}}}});
+{
+ const {render,pageSeo}=await import(pathToFileURL(path.join(renderDirectory,'render.mjs')).href);
  const write=async(route,filename)=>{
   const seo=pageSeo(route);
   let html=template.replace('<html lang="de">',`<html lang="${seo.lang}">`).replace(/<title>[\s\S]*?<\/title>/,'').replace(/<meta name="description"[^>]*>/,'');
@@ -31,4 +34,4 @@ try{
  // Admin and checkout remain crawlable so crawlers can read their noindex directives.
  await fs.writeFile('dist/robots.txt',`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${origin}/sitemap.xml\n`);
  console.log(`SEO: ${languages.length*allPages.length} localized HTML pages; ${urls.length} indexable sitemap URLs at ${origin}`);
-}finally{await server.close();}
+}
