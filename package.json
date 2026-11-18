@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k \"vite --host 0.0.0.0\" \"node --watch server/index.js\"",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-seo.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "admin:setup": "node scripts/create-admin.mjs",
-    "test": "node --test tests/api.test.js tests/admin.test.js tests/languages.test.js"
+    "test": "node --test tests/api.test.js tests/admin.test.js tests/languages.test.js",
+    "test:seo": "node --test tests/seo.test.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

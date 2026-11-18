@@ -1,3 +1,4 @@
+import { applySeo } from './seo';
 import { languages, languageNames, locales, localizeProducts } from './localization';
 import { extraContent } from './extra-content';
 import CompanyDetails from './CompanyDetails';
@@ -64,20 +65,9 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
     try { localStorage.setItem('williams-language', JSON.stringify(lang)); } catch {}
-    const page = location.pathname.split('/')[2] || '';
-    const title = t.nav[navPaths.indexOf(page)] || (page === 'checkout' ? t.cart : t.legal[['impressum', 'privacy', 'terms', 'withdrawal'].indexOf(page)]) || 'Williams';
-    document.title = `${title} | Williams Facility Services GmbH`;
-    document.querySelector('meta[name="description"]').content = ({ shop: t.shopText, contact: t.contactText, about: t.aboutPageText, careers: t.careersText, laundry: t.serviceIntro[3], facility: t.serviceIntro[4], cleaning: t.serviceIntro[0] })[page] || t.heroText;
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical); }
-    canonical.href = `${import.meta.env.VITE_SITE_URL || window.location.origin}${location.pathname}`;
-    document.querySelectorAll('link[hreflang]').forEach(el => el.remove());
-    languages.forEach(l => { const el = document.createElement('link'); el.rel = 'alternate'; el.hreflang = l; el.href = `${import.meta.env.VITE_SITE_URL || window.location.origin}/${l}${page ? '/' + page : ''}`; document.head.append(el); });
+    applySeo(location.pathname);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setCartOpen(false);
-    let robots = document.querySelector('meta[name="robots"]');
-    if (isAdmin) { if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.append(robots); } robots.content = 'noindex, nofollow'; }
-    else if (robots) robots.remove();
   }, [location.pathname, lang, isAdmin]);
   return <Context.Provider value={{ lang, t, cart, add, quantity, count, total, setCart, cartOpen, setCartOpen, products, catalogSource, refreshCatalog }}>
     <a className="skip-link" href="#main">{extraContent[lang].skip}</a>
