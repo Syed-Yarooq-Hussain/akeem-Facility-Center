@@ -59,3 +59,11 @@ body:has(.service-page-cleaning) .header-quote{background:var(--clean-dark)}
 body:has(.service-page-cleaning) .topbar{background:var(--clean-dark)}
 body:has(.service-page-cleaning) .desktop-nav>a.active:after{background:var(--clean-brand)}
 @media(max-width:560px){.footer{padding:42px 0 22px}.footer-grid{gap:30px}.footer .logo-light{padding:0}.footer .logo-light .brand-logo-image{width:235px}.footer-bottom{line-height:1.8}}
+
+/* Company contacts and the full multilingual selector. */
+.company-details{margin:24px 0;padding:22px;border:1px solid #eadaca;border-radius:14px;background:#fffaf4}
+.company-details h3{font-size:16px;margin:0 0 16px}.company-details dl{display:grid;gap:15px;margin:0}.company-details dt{font-size:11px;color:#796555;margin-bottom:4px}.company-details dd{margin:0;font-size:14px;font-weight:600;color:#493222}.company-details address{font-style:normal;line-height:1.65;font-weight:400}
+.company-details-compact{padding:0;border:0;background:none;margin:22px 0 0}.company-details-compact dd{font-size:12px}.company-details-compact dt{font-size:10px}
+.footer .footer-languages{display:flex;flex-wrap:wrap;gap:8px 13px;line-height:1.6}.footer-languages a{font-size:11px}
+.header .language-switch select{width:103px;max-width:103px;font-size:11px}.admin-translation-tabs{flex-wrap:wrap}
+@media(max-width:560px){.header .language-switch select{width:76px;max-width:76px;font-size:10px}.header .language-switch>svg{display:none}.header .brand-logo-image{width:155px}.header-actions{gap:4px}.contact-method>div{min-width:0}.contact-method span,.contact-method strong{overflow-wrap:anywhere}}

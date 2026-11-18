@@ -1,0 +1,6 @@
+export const cleanCopy = {
+  de: { tag: 'DER WILLIAMS EFFEKT', title: 'Ein Raum. Ein neuer Eindruck.', text: 'Scrollen Sie und erleben Sie den Unterschied, den professionelle Reinigung macht.', before: 'Vorher', after: 'Nachher', scroll: 'Scrollen & Sauberkeit entdecken', control: 'Reinigung selbst entdecken', note: 'KI-generierte Visualisierung · kein Kundenprojekt', link: 'Ihr Raum. Unser nächster Auftrag.', alt: 'Bürofoyer vor und nach einer professionellen Reinigung' },
+  en: { tag: 'THE WILLIAMS EFFECT', title: 'Same space. A fresh start.', text: 'Scroll to discover the difference professional cleaning can make.', before: 'Before', after: 'After', scroll: 'Scroll to reveal the clean', control: 'Explore the cleaning transformation', note: 'AI-generated illustration · not a client project', link: 'Your space. Our next transformation.', alt: 'Office lobby before and after professional cleaning' },
+  fr: { tag: 'L’EFFET WILLIAMS', title: 'Même espace. Nouveau départ.', text: 'Faites défiler pour découvrir la différence d’un nettoyage professionnel.', before: 'Avant', after: 'Après', scroll: 'Défilez pour révéler la propreté', control: 'Explorer la transformation', note: 'Illustration générée par IA · pas un projet client', link: 'Votre espace. Notre prochaine mission.', alt: 'Hall de bureau avant et après un nettoyage professionnel' },
+};
+

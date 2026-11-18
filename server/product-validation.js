@@ -1,3 +1,4 @@
+import { languages } from '../shared/languages.js';
 import { ValidationError } from './validation.js';
 
 const field = (value, max, required = false) => {
@@ -13,7 +14,7 @@ export function validateProduct(body) {
   const name = { de: field(body.name?.de, 160, true) };
   const unit = { de: field(body.unit?.de, 160, true) };
   const description = { de: field(body.description?.de, 2000) };
-  for (const l of ['en', 'fr']) {
+  for (const l of languages.filter(l=>l!=='de')) {
     name[l] = field(body.name?.[l], 160) || name.de;
     unit[l] = field(body.unit?.[l], 160) || unit.de;
     description[l] = field(body.description?.[l], 2000) || description.de;

@@ -1,3 +1,4 @@
+import { languages } from '../shared/languages.js';
 import { products } from '../shared/catalog.js';
 
 export class ValidationError extends Error { constructor(message) { super(message); this.status = 400; } }
@@ -15,7 +16,7 @@ export function validateContact(body, order = false) {
   const name = text(body.name, 120, true);
   const email = text(body.email, 254, true).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ValidationError('Invalid email');
-  const language = ['de', 'en', 'fr'].includes(body.language) ? body.language : 'de';
+  const language = languages.includes(body.language) ? body.language : 'de';
   const data = { name, email, company: text(body.company, 160), phone: text(body.phone, 40), message: text(body.message, 5000, !order), language, consent: true, consentVersion: '2026-11-05-draft' };
   if (!order) {
     if (!['0', '1', '2', '3', '4', 'shop', 'careers'].includes(body.service)) throw new ValidationError('Invalid service');
