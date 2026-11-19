@@ -18,7 +18,7 @@ try{
    assert.ok(!(await page.locator('main').innerText()).includes('undefined'),`${lang}/${route}: missing text`);
    if(route==='contact'){
     assert.ok((await page.locator('aside').innerText()).includes('C. Agbanyo'));
-    assert.ok((await page.locator('aside').innerText()).includes('I. Bericha'));
+    assert.ok(!(await page.locator('aside').innerText()).includes('I. Bericha'));
     assert.ok((await page.locator('aside').innerText()).includes('Borselstraße 20'));
    }
    if(route==='shop')assert.equal(await page.locator('.product-card').count(),products.length);

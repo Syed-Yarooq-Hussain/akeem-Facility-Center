@@ -22,7 +22,7 @@ for (const collection of [content,modernContent,premiumContent,adminContent,lega
 // Replace outdated placeholder contact statements with confirmed company information.
 for (const lang of languages) {
   content[lang].demoContact = extraContent[lang].contactNote;
-  legalCopy[lang].impressum[0][1] = `Williams Facility Services GmbH. Borselstraße 20, 22765 Altona. ${extraContent[lang].management}: C. Agbanyo. ${extraContent[lang].siteLead}: I. Bericha. info@williamsfacility.com. ${extraContent[lang].registerNote}`;
+  legalCopy[lang].impressum[0][1] = `Williams Facility Services GmbH. Borselstraße 20, 22765 Altona. ${extraContent[lang].management}: C. Agbanyo. info@williamsfacility.com. ${extraContent[lang].registerNote}`;
   legalCopy[lang].privacy[0][1] = 'Williams Facility Services GmbH. Borselstraße 20, 22765 Altona. info@williamsfacility.com.';
 }
 export function localizeProducts(products) {

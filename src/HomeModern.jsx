@@ -3,12 +3,13 @@ import { ArrowDown, ArrowUpRight, Check, Sparkles, Truck, Shirt, ShieldCheck, Us
 import { modernContent } from './modern-content';
 import { premiumContent } from './premium-content';
 import CleanReveal from './CleanReveal';
+import CleaningVideo from './CleaningVideo';
 
 export default function HomeModern({ t, lang, LocalLink, Button, Eyebrow, ServiceCards, Process, FAQ, InquiryForm }) {
   const c=modernContent[lang], p=premiumContent[lang];
   return <>
     <section className="premium-hero modern-hero">
-      <img className="premium-hero-photo" src="/images/hero-interior.svg" alt={t.cards[0][0]} fetchPriority="high"/>
+      <CleaningVideo hero lang={lang}/>
       <div className="premium-hero-shade"/>
       <div className="container premium-hero-inner">
         <Eyebrow>{p.heroTag}</Eyebrow>
@@ -18,13 +19,13 @@ export default function HomeModern({ t, lang, LocalLink, Button, Eyebrow, Servic
     </section>
     <div className="premium-assurance"><div className="container">{t.pillars.map((text,i)=>{const Icon=[ShieldCheck,CalendarClock,Users][i];return <div key={text}><Icon size={20}/><span>{text}</span></div>;})}</div></div>
     <CleanReveal lang={lang} LocalLink={LocalLink}/>
-    <section id="services" className="section premium-services">
-      <div className="container"><div className="premium-intro"><Eyebrow>{p.introTag}</Eyebrow><h2>{p.introTitle}<br/><em>{p.introAccent}</em></h2><p>{p.introText}</p></div><ServiceCards/></div>
-    </section>
     <section className="premium-about section">
       <div className="container premium-about-grid"><div className="premium-about-photos"><img className="premium-about-main" src="/images/crew.svg" alt={t.cards[0][0]} loading="lazy"/><div className="premium-about-inset"><img src="/images/precision.svg" alt={t.serviceItems[0][2]} loading="lazy"/><span>{p.photoTag}</span></div></div>
         <div className="premium-about-copy"><Eyebrow>{p.whyTag}</Eyebrow><h2>{p.whyTitle}</h2><p>{p.whyText}</p><div className="premium-values">{t.values.map(([title,text],i)=>{const Icon=[Users,CalendarClock,Sparkles][i];return <div key={title}><span><Icon size={20}/></span><div><h3>{title}</h3><p>{text}</p></div></div>;})}</div><Button to="about">{t.aboutCta}</Button></div>
       </div>
+    </section>
+    <section id="services" className="section premium-services">
+      <div className="container"><div className="premium-intro"><Eyebrow>{p.introTag}</Eyebrow><h2>{p.introTitle}<br/><em>{p.introAccent}</em></h2><p>{p.introText}</p></div><ServiceCards/></div>
     </section>
     <section className="premium-specialist"><div className="premium-specialist-photo"><img src="/images/medical.svg" alt={t.serviceTitles[2]} loading="lazy"/><span>WILLIAMS / HYGIENE</span></div><div className="premium-specialist-copy"><Eyebrow>{p.specialistTag}</Eyebrow><h2>{p.specialistTitle}<br/><em>{p.specialistAccent}</em></h2><p>{p.specialistText}</p><ul>{[t.serviceItems[2][1],t.serviceItems[2][3],t.serviceItems[2][4]].map(item=><li key={item}><Check size={16}/>{item}</li>)}</ul><Button to="contact?service=2" light>{p.specialistLink}</Button><small>{t.specialNote}</small></div></section>
     <section className="photo-industries section premium-gallery"><div className="container"><div className="modern-section-heading"><div><Eyebrow>{c.galleryTag}</Eyebrow><h2>{c.galleryTitle}<br/><em>{c.galleryAccent}</em></h2></div><p>{c.galleryText}</p></div><div className="photo-industry-grid">{['office','hotel','detail','linen'].map((photo,i)=><LocalLink key={photo} to={`contact?industry=${[0,1,0,4][i]}`} className={`photo-industry photo-industry-${i}`}><img src={`/images/${photo}.svg`} alt={c.galleryNames[i]} loading="lazy"/><div><span>0{i+1}</span><h3>{c.galleryNames[i]}</h3><ArrowUpRight size={22}/></div></LocalLink>)}</div><small className="photo-disclosure">{c.photoNote}</small></div></section>
